@@ -1,4 +1,5 @@
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+# Build stage
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TEST_ENV
 

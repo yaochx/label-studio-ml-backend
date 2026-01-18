@@ -1,0 +1,31 @@
+name: label-studio-ml-sam2
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch=2.5.1
+  - pytorch-cuda=12.4
+  - cudatoolkit=12.4
+  - pip
+  - git
+  - wget
+  - gcc
+  - g++
+  - freeglut3-dev
+  - build-essential
+  - libx11-dev
+  - libxmu-dev
+  - libxi-dev
+  - libglu1-mesa
+  - libglu1-mesa-dev
+  - libfreeimage-dev
+  - ffmpeg
+  - libsm6
+  - libxext6
+  - libffi-dev
+  - pip:
+    - gunicorn==22.0.0
+    - label-studio-ml @ git+https://github.com/HumanSignal/label-studio-ml-backend.git

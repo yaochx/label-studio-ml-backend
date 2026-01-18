@@ -1,15 +1,24 @@
 version: "3.8"
 
+# 生产环境配置示例
+# 使用从 Docker Hub 拉取的预构建镜像，而不是本地构建
+# 
+# 使用方法:
+# 1. 复制此文件: cp docker-compose.prod.yml.example docker-compose.prod.yml
+# 2. 更新镜像名称为你构建的镜像
+# 3. 运行: docker compose -f docker-compose.prod.yml up -d
+
 services:
   ml-backend:
     container_name: ml-backend
-    image: humansignal/ml-backend:v0
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-      args:
-        TEST_ENV: ${TEST_ENV}
+    # 使用从 Docker Hub 拉取的镜像（替换为你的 Docker Hub 用户名和镜像名）
+    image: your-dockerhub-username/label-studio-ml-sam2:latest
+    
+    # 生产环境不需要 build 配置，直接使用镜像
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: production
 
     #    deploy:
     #      resources:
@@ -19,16 +28,14 @@ services:
     #              count: 1
     #              capabilities: [ gpu ]
 
-
     environment:
       # specify these parameters if you want to use basic auth for the model server
       - BASIC_AUTH_USER=hi-algo
       - BASIC_AUTH_PASS=hi-algo-2026
-      # set the log level for the model server
+      # set the log level for the model server (WARNING for production, DEBUG for development)
       - LOG_LEVEL=WARNING
-      # any other parameters that you want to pass to the model server
-      - ANY=PARAMETER
       # specify the number of workers and threads for the model server
+      # WORKERS: recommended = CPU cores * 2 + 1
       - WORKERS=4
       - THREADS=8
       # specify the model directory (likely you don't need to change this)
@@ -51,3 +58,4 @@ services:
       - "9090:9090"
     volumes:
       - "./data/server:/data"
+    restart: unless-stopped  # 生产环境建议添加自动重启
