@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 DOCKER_USERNAME=${DOCKER_USERNAME:-"your-dockerhub-username"}
 IMAGE_NAME=${IMAGE_NAME:-"label-studio-ml-sam2"}
 TAG=${TAG:-"latest"}
-BUILD_TARGET=${BUILD_TARGET:-"production"}
+BUILD_TARGET=${BUILD_TARGET:-""}  # Empty by default, only use if specified
 TEST_ENV=${TEST_ENV:-""}
 PUSH=${PUSH:-"false"}
 NO_CACHE=${NO_CACHE:-"false"}
@@ -100,7 +100,7 @@ echo "Docker Username: ${DOCKER_USERNAME}"
 echo "Image Name:      ${IMAGE_NAME}"
 echo "Tag:             ${TAG}"
 echo "Full Image:      ${FULL_IMAGE_NAME}"
-echo "Build Target:    ${BUILD_TARGET}"
+echo "Build Target:    ${BUILD_TARGET:-'none (single stage)'}"
 echo "Test Env:        ${TEST_ENV:-'false'}"
 echo "Push Image:      ${PUSH}"
 echo "No Cache:        ${NO_CACHE}"
@@ -115,9 +115,13 @@ fi
 
 # Build arguments
 BUILD_ARGS=(
-    --target "${BUILD_TARGET}"
     --build-arg "TEST_ENV=${TEST_ENV}"
 )
+
+# Only add --target if BUILD_TARGET is specified and not empty
+if [ -n "${BUILD_TARGET}" ] && [ "${BUILD_TARGET}" != "" ]; then
+    BUILD_ARGS+=(--target "${BUILD_TARGET}")
+fi
 
 if [ "${NO_CACHE}" = "true" ]; then
     BUILD_ARGS+=(--no-cache)

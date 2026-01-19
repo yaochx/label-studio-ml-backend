@@ -1,5 +1,4 @@
-# Build stage
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime AS builder
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TEST_ENV
 
@@ -52,7 +51,7 @@ COPY requirements-test.txt .
 # build only when TEST_ENV="true"
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     if [ "$TEST_ENV" = "true" ]; then \
-      pip3 install -r requirements-test.txt; \
+    pip3 install -r requirements-test.txt; \
     fi
 
 COPY . ./
