@@ -14,5 +14,11 @@
 # Include script
 !*.sh
 
+# Include local sam2 repo and checkpoints
+!sam2
+!sam2/**
+!checkpoints
+!checkpoints/**
+
 # Exclude specific requirements if necessary
 # requirements-test.txt (Uncomment if you decide to exclude this)

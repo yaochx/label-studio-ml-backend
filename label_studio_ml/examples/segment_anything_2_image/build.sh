@@ -15,13 +15,15 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default values (can be overridden by environment variables or arguments)
-DOCKER_USERNAME=${DOCKER_USERNAME:-"your-dockerhub-username"}
+DOCKER_USERNAME=${DOCKER_USERNAME:-"neurobot"}
 IMAGE_NAME=${IMAGE_NAME:-"label-studio-ml-sam2"}
 TAG=${TAG:-"latest"}
 BUILD_TARGET=${BUILD_TARGET:-""}  # Empty by default, only use if specified
 TEST_ENV=${TEST_ENV:-""}
 PUSH=${PUSH:-"false"}
 NO_CACHE=${NO_CACHE:-"false"}
+DOCKER_PLATFORM=${DOCKER_PLATFORM:-""}
+BASE_IMAGE=${BASE_IMAGE:-""}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -40,6 +42,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --target)
             BUILD_TARGET="$2"
+            shift 2
+            ;;
+        --platform)
+            DOCKER_PLATFORM="$2"
+            shift 2
+            ;;
+        --base-image)
+            BASE_IMAGE="$2"
             shift 2
             ;;
         --test-env)
@@ -62,6 +72,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --image IMAGE_NAME     Image name (default: \$IMAGE_NAME or 'label-studio-ml-sam2')"
             echo "  --tag TAG              Image tag (default: \$TAG or 'latest')"
             echo "  --target TARGET        Docker build target (default: \$BUILD_TARGET or 'production')"
+            echo "  --platform PLATFORM    Docker build platform (e.g. linux/amd64, linux/arm64)"
+            echo "  --base-image IMAGE     Base image (e.g. nvcr.io/nvidia/pytorch:24.10-py3)"
             echo "  --test-env             Include test dependencies"
             echo "  --push                 Push image to Docker Hub after building"
             echo "  --no-cache             Build without using cache"
@@ -73,6 +85,8 @@ while [[ $# -gt 0 ]]; do
             echo "  IMAGE_NAME             Image name"
             echo "  TAG                    Image tag"
             echo "  BUILD_TARGET           Docker build target"
+            echo "  DOCKER_PLATFORM        Docker build platform (e.g. linux/amd64, linux/arm64)"
+            echo "  BASE_IMAGE             Base image (e.g. nvcr.io/nvidia/pytorch:24.10-py3)"
             echo "  TEST_ENV               Set to 'true' to include test dependencies"
             echo "  PUSH                   Set to 'true' to push after building"
             echo ""
@@ -92,6 +106,33 @@ done
 # Full image name
 FULL_IMAGE_NAME="${DOCKER_USERNAME}/${IMAGE_NAME}:${TAG}"
 
+# Pick a better default base image on ARM (DGX Spark / Grace-class)
+if [ -z "${BASE_IMAGE}" ]; then
+    ARCH="$(uname -m)"
+    if [ "${ARCH}" = "aarch64" ] || [ "${ARCH}" = "arm64" ]; then
+        BASE_IMAGE="nvcr.io/nvidia/pytorch:24.10-py3"
+        echo -e "${YELLOW}Detected ARM host; defaulting BASE_IMAGE=${BASE_IMAGE}.${NC}"
+        echo -e "${YELLOW}If NGC requires auth, run: docker login nvcr.io${NC}"
+    else
+        BASE_IMAGE="pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime"
+    fi
+fi
+
+# If running on ARM and no platform was provided, default to amd64
+if [ -z "${DOCKER_PLATFORM}" ]; then
+    ARCH="$(uname -m)"
+    if [ "${ARCH}" = "aarch64" ] || [ "${ARCH}" = "arm64" ]; then
+        DOCKER_PLATFORM="linux/amd64"
+        echo -e "${YELLOW}Detected ARM host; defaulting to ${DOCKER_PLATFORM} for base image compatibility.${NC}"
+        echo -e "${YELLOW}If you have binfmt/qemu disabled, enable it or pass --platform explicitly.${NC}"
+    fi
+fi
+
+if [ "${DOCKER_PLATFORM}" = "linux/arm64" ]; then
+    echo -e "${YELLOW}Warning: the base image pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime is amd64-only.${NC}"
+    echo -e "${YELLOW}Use --platform linux/amd64 on ARM, or switch to an arm64-compatible base image (CPU-only).${NC}"
+fi
+
 # Print configuration
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Docker Image Build Configuration${NC}"
@@ -101,6 +142,8 @@ echo "Image Name:      ${IMAGE_NAME}"
 echo "Tag:             ${TAG}"
 echo "Full Image:      ${FULL_IMAGE_NAME}"
 echo "Build Target:    ${BUILD_TARGET:-'none (single stage)'}"
+echo "Platform:        ${DOCKER_PLATFORM:-'default'}"
+echo "Base Image:      ${BASE_IMAGE}"
 echo "Test Env:        ${TEST_ENV:-'false'}"
 echo "Push Image:      ${PUSH}"
 echo "No Cache:        ${NO_CACHE}"
@@ -116,6 +159,7 @@ fi
 # Build arguments
 BUILD_ARGS=(
     --build-arg "TEST_ENV=${TEST_ENV}"
+    --build-arg "BASE_IMAGE=${BASE_IMAGE}"
 )
 
 # Only add --target if BUILD_TARGET is specified and not empty
@@ -125,6 +169,10 @@ fi
 
 if [ "${NO_CACHE}" = "true" ]; then
     BUILD_ARGS+=(--no-cache)
+fi
+
+if [ -n "${DOCKER_PLATFORM}" ]; then
+    BUILD_ARGS+=(--platform "${DOCKER_PLATFORM}")
 fi
 
 # Build the image

@@ -1,4 +1,5 @@
-FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+ARG BASE_IMAGE=pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+FROM ${BASE_IMAGE}
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TEST_ENV
 
@@ -37,12 +38,12 @@ COPY requirements.txt .
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     pip3 install -r requirements.txt
 
-# install segment-anything-2
-RUN cd / && git clone --depth 1 --branch main --single-branch https://github.com/facebookresearch/sam2.git
+# install segment-anything-2 from local files
+COPY sam2 /sam2
+# checkpoints should be inside sam2/checkpoints in the build context
 WORKDIR /sam2
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     pip3 install -e .
-RUN cd checkpoints && ./download_ckpts.sh
 
 WORKDIR /app
 
