@@ -3,13 +3,13 @@ version: "3.8"
 services:
   ml-backend:
     container_name: ml-backend
-    image: humansignal/ml-backend:v0
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-      args:
-        TEST_ENV: ${TEST_ENV}
+    image: hi-algo/label-studio-ml-sam2:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: production
+    #   args:
+    #     TEST_ENV: ${TEST_ENV}
 
     #    deploy:
     #      resources:
@@ -36,7 +36,7 @@ services:
       # specify device
       - DEVICE=cuda # or 'cpu' (coming soon)
       # SAM2 model config
-      - MODEL_CONFIG=configs/sam2.1/sam2.1_hiera_l.yaml
+      - MODEL_CONFIG=configs/sam2/sam2.1_hiera_l.yaml
       # SAM2 checkpoint
       - MODEL_CHECKPOINT=sam2.1_hiera_large.pt
 
@@ -45,9 +45,10 @@ services:
       # Do not use 'localhost' as it does not work within Docker containers.
       # Use prefix 'http://' or 'https://' for the URL always.
       # Determine the actual IP using 'ifconfig' (Linux/Mac) or 'ipconfig' (Windows).
-      - LABEL_STUDIO_URL=http://192.168.3.99:8080
-      - LABEL_STUDIO_API_KEY=775f2a958ffc9dbcf806d983a81a0c4857cbb4a0
+      - LABEL_STUDIO_URL=http://10.220.176.94:8080
+      - LABEL_STUDIO_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6ODA3NjA3MzgyMSwiaWF0IjoxNzY4ODczODIxLCJqdGkiOiJkODRjZmVlYjBlNTU0OTZiYTM0NGVkMGU5YTEzZmY5OSIsInVzZXJfaWQiOiIxIn0.BRWz1bAq3dcwxBDUy_ymUsHH8aWuNKkawrKWB_IzAiE
     ports:
       - "9090:9090"
     volumes:
-      - "./data/server:/data"
+      - "./ml-backend:/data"
+    restart: unless-stopped  # 生产环境建议添加自动重启
