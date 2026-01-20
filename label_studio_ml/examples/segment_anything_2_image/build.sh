@@ -24,6 +24,9 @@ PUSH=${PUSH:-"false"}
 NO_CACHE=${NO_CACHE:-"false"}
 DOCKER_PLATFORM=${DOCKER_PLATFORM:-""}
 BASE_IMAGE=${BASE_IMAGE:-""}
+SAM2_DIR=${SAM2_DIR:-"sam2"}
+DOCKER_CONTEXT=${DOCKER_CONTEXT:-"."}
+DOCKERFILE_PATH=${DOCKERFILE_PATH:-"Dockerfile"}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -52,6 +55,18 @@ while [[ $# -gt 0 ]]; do
             BASE_IMAGE="$2"
             shift 2
             ;;
+        --sam2-dir)
+            SAM2_DIR="$2"
+            shift 2
+            ;;
+        --context)
+            DOCKER_CONTEXT="$2"
+            shift 2
+            ;;
+        --dockerfile)
+            DOCKERFILE_PATH="$2"
+            shift 2
+            ;;
         --test-env)
             TEST_ENV="true"
             shift
@@ -74,6 +89,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --target TARGET        Docker build target (default: \$BUILD_TARGET or 'production')"
             echo "  --platform PLATFORM    Docker build platform (e.g. linux/amd64, linux/arm64)"
             echo "  --base-image IMAGE     Base image (e.g. nvcr.io/nvidia/pytorch:24.10-py3)"
+            echo "  --sam2-dir PATH        Path to sam2 within build context (default: sam2)"
+            echo "  --context PATH         Docker build context (default: .)"
+            echo "  --dockerfile PATH      Dockerfile path (default: Dockerfile)"
             echo "  --test-env             Include test dependencies"
             echo "  --push                 Push image to Docker Hub after building"
             echo "  --no-cache             Build without using cache"
@@ -87,6 +105,9 @@ while [[ $# -gt 0 ]]; do
             echo "  BUILD_TARGET           Docker build target"
             echo "  DOCKER_PLATFORM        Docker build platform (e.g. linux/amd64, linux/arm64)"
             echo "  BASE_IMAGE             Base image (e.g. nvcr.io/nvidia/pytorch:24.10-py3)"
+            echo "  SAM2_DIR               Path to sam2 within build context"
+            echo "  DOCKER_CONTEXT         Docker build context"
+            echo "  DOCKERFILE_PATH        Dockerfile path"
             echo "  TEST_ENV               Set to 'true' to include test dependencies"
             echo "  PUSH                   Set to 'true' to push after building"
             echo ""
@@ -144,6 +165,9 @@ echo "Full Image:      ${FULL_IMAGE_NAME}"
 echo "Build Target:    ${BUILD_TARGET:-'none (single stage)'}"
 echo "Platform:        ${DOCKER_PLATFORM:-'default'}"
 echo "Base Image:      ${BASE_IMAGE}"
+echo "SAM2 Dir:        ${SAM2_DIR}"
+echo "Build Context:   ${DOCKER_CONTEXT}"
+echo "Dockerfile:      ${DOCKERFILE_PATH}"
 echo "Test Env:        ${TEST_ENV:-'false'}"
 echo "Push Image:      ${PUSH}"
 echo "No Cache:        ${NO_CACHE}"
@@ -160,6 +184,7 @@ fi
 BUILD_ARGS=(
     --build-arg "TEST_ENV=${TEST_ENV}"
     --build-arg "BASE_IMAGE=${BASE_IMAGE}"
+    --build-arg "SAM2_DIR=${SAM2_DIR}"
 )
 
 # Only add --target if BUILD_TARGET is specified and not empty
@@ -179,7 +204,7 @@ fi
 echo -e "${YELLOW}Building Docker image: ${FULL_IMAGE_NAME}${NC}"
 echo ""
 
-if docker build "${BUILD_ARGS[@]}" -t "${FULL_IMAGE_NAME}" .; then
+if docker build "${BUILD_ARGS[@]}" -f "${DOCKERFILE_PATH}" -t "${FULL_IMAGE_NAME}" "${DOCKER_CONTEXT}"; then
     echo ""
     echo -e "${GREEN}✓ Image built successfully: ${FULL_IMAGE_NAME}${NC}"
 else
